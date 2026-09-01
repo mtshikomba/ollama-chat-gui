@@ -7,7 +7,9 @@ Run with:
 Override the server address with the OLLAMA_HOST env var if needed.
 """
 
+import base64
 import os
+from pathlib import Path
 
 import chainlit as cl
 from chainlit.input_widget import Select, Slider
@@ -16,6 +18,71 @@ from ollama import AsyncClient, ResponseError
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://192.168.1.153:11434")
 
 client = AsyncClient(host=OLLAMA_HOST)
+
+
+def _build_user_message(message: cl.Message) -> dict:
+    """Merge plain text with uploaded files/images before sending to Ollama."""
+    prompt = (message.content or "").strip()
+    text_parts = []
+    images = []
+    seen_paths = set()
+
+    for raw_item in list(getattr(message, "elements", []) or []) + list(
+        getattr(message, "attachments", []) or []
+    ):
+        if raw_item is None:
+            continue
+
+        if isinstance(raw_item, dict):
+            path = raw_item.get("path") or raw_item.get("url") or raw_item.get("name")
+            mime = raw_item.get("mime") or raw_item.get("type") or ""
+            name = raw_item.get("name") or raw_item.get("filename") or "uploaded file"
+        else:
+            path = getattr(raw_item, "path", None) or getattr(raw_item, "url", None)
+            mime = getattr(raw_item, "mime", None) or getattr(raw_item, "type", None) or ""
+            name = getattr(raw_item, "name", None) or getattr(raw_item, "filename", None) or "uploaded file"
+
+        if not path or not os.path.exists(path):
+            continue
+
+        normalized = os.path.normcase(os.path.abspath(path))
+        if normalized in seen_paths:
+            continue
+        seen_paths.add(normalized)
+
+        lower_path = str(path).lower()
+        is_image = mime.lower().startswith("image/") or lower_path.endswith(
+            (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
+        )
+
+        if is_image:
+            try:
+                with open(path, "rb") as image_file:
+                    images.append(base64.b64encode(image_file.read()).decode("utf-8"))
+                text_parts.append(f"Image attachment: {name}")
+            except OSError:
+                text_parts.append(f"Image attachment: {name} (unreadable)")
+            continue
+
+        try:
+            file_text = Path(path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        if file_text.strip():
+            text_parts.append(f"Attached file: {name}\n{file_text.strip()}")
+
+    if text_parts:
+        combined = "\n\n".join(part for part in text_parts if part)
+        if prompt:
+            prompt = f"{prompt}\n\n{combined}"
+        else:
+            prompt = combined
+
+    payload = {"role": "user", "content": prompt or "Please analyze the uploaded file(s)."}
+    if images:
+        payload["images"] = images
+    return payload
 
 
 async def list_models() -> list[str]:
@@ -105,7 +172,8 @@ async def on_message(message: cl.Message):
         return
 
     history = cl.user_session.get("history") or []
-    history.append({"role": "user", "content": message.content})
+    user_message = _build_user_message(message)
+    history.append(user_message)
 
     options = {
         "temperature": settings.get("temperature", 0.8),
