@@ -1,0 +1,284 @@
+:root {
+  color-scheme: dark;
+  --bg-0: #070d18;
+  --bg-1: #0b1220;
+  --bg-2: #111b2d;
+  --panel: rgba(15, 23, 42, 0.82);
+  --panel-strong: rgba(15, 23, 42, 0.94);
+  --panel-soft: rgba(148, 163, 184, 0.06);
+  --border: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.3);
+  --text: #e6edf8;
+  --text-muted: #a8b5c8;
+  --text-soft: #8ea0bc;
+  --accent: #7dd3fc;
+  --accent-strong: #38bdf8;
+  --accent-soft: rgba(125, 211, 252, 0.15);
+  --code-bg: rgba(15, 23, 42, 0.8);
+  --shadow: 0 18px 42px rgba(2, 6, 23, 0.45);
+}
+
+html,
+body,
+#root {
+  background: radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 28%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  color: var(--text);
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.cl-app,
+.cl-main,
+.cl-chat,
+.cl-chat-container {
+  background: transparent !important;
+}
+
+.cl-message,
+.cl-chat-input,
+.cl-sidebar,
+.cl-header,
+.cl-footer,
+.cl-settings {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(15, 23, 42, 0.72));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.cl-message {
+  border-radius: 18px !important;
+  padding: 1rem 1.1rem !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.cl-message:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 22px 48px rgba(2, 6, 23, 0.52);
+}
+
+.cl-message-content {
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.cl-message-content > :first-child {
+  margin-top: 0;
+}
+
+.cl-message-content > :last-child {
+  margin-bottom: 0;
+}
+
+.cl-message-content h1,
+.cl-message-content h2,
+.cl-message-content h3,
+.cl-message-content h4,
+.cl-message-content h5,
+.cl-message-content h6,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  color: #f4f8ff;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin: 1.35rem 0 0.7rem;
+}
+
+.cl-message-content h1,
+.prose h1 {
+  font-size: clamp(1.8rem, 2vw, 2.2rem);
+}
+
+.cl-message-content h2,
+.prose h2 {
+  font-size: clamp(1.45rem, 1.7vw, 1.8rem);
+}
+
+.cl-message-content h3,
+.prose h3 {
+  font-size: clamp(1.2rem, 1.45vw, 1.45rem);
+}
+
+.cl-message-content p,
+.cl-message-content ul,
+.cl-message-content ol,
+.cl-message-content blockquote,
+.cl-message-content pre,
+.cl-message-content table,
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre,
+.prose table {
+  margin-top: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.cl-message-content p,
+.cl-message-content li,
+.cl-message-content td,
+.cl-message-content th,
+.cl-message-content blockquote,
+.prose p,
+.prose li,
+.prose td,
+.prose th,
+.prose blockquote {
+  color: var(--text);
+}
+
+.cl-message-content ul,
+.cl-message-content ol,
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+}
+
+.cl-message-content li + li,
+.prose li + li {
+  margin-top: 0.35rem;
+}
+
+.cl-message-content a,
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1.5px;
+}
+
+.cl-message-content strong,
+.prose strong {
+  color: #f5f9ff;
+}
+
+.cl-message-content code,
+.prose code {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 8px;
+  padding: 0.14rem 0.38rem;
+  color: #dff6ff;
+  font-size: 0.9em;
+  font-family: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.cl-message-content pre,
+.prose pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  overflow-x: auto;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.cl-message-content pre code,
+.prose pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #d7e9ff;
+  font-size: 0.92em;
+}
+
+.cl-message-content blockquote,
+.prose blockquote {
+  border-left: 3px solid rgba(125, 211, 252, 0.8);
+  background: rgba(125, 211, 252, 0.06);
+  border-radius: 0 12px 12px 0;
+  padding: 0.6rem 0.85rem;
+  color: var(--text-muted);
+}
+
+.cl-message-content hr,
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.2rem 0;
+}
+
+.cl-message-content table,
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cl-message-content th,
+.cl-message-content td,
+.prose th,
+.prose td {
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.cl-message-content th,
+.prose th {
+  background: rgba(148, 163, 184, 0.08);
+  color: #f7fbff;
+}
+
+.cl-message-content img,
+.prose img {
+  border-radius: 12px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+}
+
+.cl-input,
+.cl-textarea,
+.cl-chat-input {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.cl-input:focus,
+.cl-textarea:focus,
+.cl-chat-input:focus {
+  border-color: rgba(125, 211, 252, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button {
+  transition: filter 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover {
+  filter: brightness(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

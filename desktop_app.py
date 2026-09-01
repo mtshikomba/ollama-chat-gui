@@ -37,6 +37,166 @@ from PySide6.QtWidgets import (
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://192.168.1.153:11434").rstrip("/")
 REQUEST_TIMEOUT = 300
 
+APP_STYLESHEET = """
+QApplication {
+    background-color: #070d18;
+    color: #e6edf8;
+}
+
+QMainWindow {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #0b1220, stop:1 #070d18);
+    color: #e6edf8;
+}
+
+QWidget {
+    color: #e6edf8;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+QLabel {
+    color: #d9e5f5;
+}
+
+QComboBox,
+QDoubleSpinBox,
+QSpinBox,
+QPushButton,
+QPlainTextEdit,
+QTextEdit {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.8);
+    color: #e6edf8;
+    border-radius: 12px;
+    padding: 8px 10px;
+}
+
+QComboBox,
+QDoubleSpinBox,
+QSpinBox {
+    min-height: 34px;
+}
+
+QPushButton {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #7dd3fc, stop:1 #5b7cff);
+    border: none;
+    color: #061120;
+    font-weight: 700;
+    padding: 9px 14px;
+    min-height: 34px;
+}
+
+QPushButton:disabled {
+    background: rgba(148, 163, 184, 0.14);
+    color: rgba(230, 237, 248, 0.6);
+}
+
+QPushButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #9ae6ff, stop:1 #6d8cff);
+}
+
+QTextEdit,
+QPlainTextEdit {
+    border-radius: 16px;
+    padding: 14px 16px;
+    selection-background-color: rgba(125, 211, 252, 0.4);
+    selection-color: #ffffff;
+}
+
+QStatusBar {
+    background: rgba(15, 23, 42, 0.8);
+    color: #d9e5f5;
+}
+
+QScrollBar:vertical {
+    background: rgba(15, 23, 42, 0.5);
+    width: 10px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(125, 211, 252, 0.35);
+    border-radius: 5px;
+}
+"""
+
+
+def escape_html(value: str) -> str:
+    return (
+        value.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def render_markdown_block(text: str) -> str:
+    value = escape_html(text).replace("\r\n", "\n").replace("\r", "\n")
+    value = value.replace("\n", "<br>")
+
+    lines = value.split("<br>")
+    html_parts = []
+    in_code = False
+    code_lines = []
+    in_list = False
+    list_items = []
+
+    def flush_list():
+        if list_items:
+            html_parts.append("<ul>" + "".join(f"<li>{item}</li>" for item in list_items) + "</ul>")
+            list_items.clear()
+
+    def flush_code():
+        nonlocal in_code, code_lines
+        if in_code:
+            html_parts.append("<pre><code>" + "".join(code_lines) + "</code></pre>")
+            code_lines = []
+            in_code = False
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if line.startswith("```"):
+            flush_list()
+            if in_code:
+                flush_code()
+            else:
+                in_code = True
+            continue
+        if in_code:
+            code_lines.append(raw_line + "\n")
+            continue
+
+        if line.startswith("- ") or line.startswith("* "):
+            flush_list()
+            list_items.append(line[2:])
+            in_list = True
+            continue
+
+        if in_list and not (line.startswith("- ") or line.startswith("* ")):
+            flush_list()
+            in_list = False
+
+        if line.startswith("> "):
+            html_parts.append(f"<blockquote>{line[2:]}</blockquote>")
+            continue
+
+        if line.startswith("# "):
+            html_parts.append(f"<h3>{line[2:]}</h3>")
+            continue
+
+        if line.startswith("## "):
+            html_parts.append(f"<h4>{line[3:]}</h4>")
+            continue
+
+        if line:
+            html_parts.append(f"<p>{line}</p>")
+
+    flush_list()
+    flush_code()
+    return "".join(html_parts) or "<p></p>"
+
 
 class ModelsWorker(QThread):
     """Fetch the list of installed models without blocking the UI."""
@@ -135,6 +295,7 @@ class MainWindow(QMainWindow):
         self.models_worker = None
         self._assistant_open = False
 
+        QApplication.instance().setStyleSheet(APP_STYLESHEET)
         self._build_ui()
         self.refresh_models()
 
@@ -212,8 +373,16 @@ class MainWindow(QMainWindow):
         cur = self.transcript.textCursor()
         cur.movePosition(QTextCursor.End)
         self.transcript.setTextCursor(cur)
-        self.transcript.insertPlainText(text)
+        self.transcript.insertHtml(render_markdown_block(text))
         self.transcript.ensureCursorVisible()
+
+    def _append_user_message(self, text):
+        self._append_html(f"<div style='margin: 12px 0 8px;'><strong style='color:#e6edf8;'>You</strong></div>")
+        self._append_text_at_end(text)
+
+    def _append_assistant_message(self, text, model):
+        self._append_html(f"<div style='margin: 12px 0 8px;'><strong style='color:#7dd3fc;'>{model}</strong></div>")
+        self._append_text_at_end(text)
 
     # ---------- models ----------
 
@@ -272,9 +441,8 @@ class MainWindow(QMainWindow):
 
         self.input.clear()
         self.messages.append({"role": "user", "content": text})
-        self._append_html(f"<p><b>You</b></p>")
-        self._append_text_at_end(text + "\n")
-        self._append_html(f"<p><b>{model}</b></p>")
+        self._append_user_message(text)
+        self._append_assistant_message("", model)
         self._assistant_open = True
 
         options = {
@@ -298,7 +466,7 @@ class MainWindow(QMainWindow):
     def _on_done(self, full):
         if full:
             self.messages.append({"role": "assistant", "content": full})
-        self._append_text_at_end("\n\n")
+        self._append_text_at_end("\n")
         self._assistant_open = False
         self.send_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
